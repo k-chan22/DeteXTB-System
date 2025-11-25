@@ -115,10 +115,10 @@ supabase_auth==2.12.3
 supabase_functions==0.10.1
 sympy==1.14.0
 tenacity==9.1.2
-tensorboard==2.16.2
+tensorboard==2.23.0
 tensorboard-data-server==0.7.2
-tensorflow==2.16.2
-tensorflow-intel==2.16.2
+tensorflow==2.23.0
+tensorflow-intel==2.23.0
 tensorflow-io-gcs-filesystem==0.31.0
 termcolor==3.1.0
 tifffile==2025.8.28
