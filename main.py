@@ -11,8 +11,7 @@ st.set_page_config(page_title="DeteXTB", layout="wide")
 MODEL_FILE = "deteXTB_final_mandaue_model.keras"
 MODEL_URL = "https://drive.google.com/uc?id=19Qi6uLhoTAz6QrH9cQC9oRR9rkSe5T91"
 
-if not os.path.exists(MODEL_FILE):
-    st.info("Downloading model from Google Drive...")   # just a safety check
+if not os.path.exists(MODEL_FILE): # safety check
     gdown.download(MODEL_URL, MODEL_FILE, quiet=False)
 
 if "model" not in st.session_state:
@@ -39,3 +38,4 @@ else:
         manager_sidebar.main()
     else:
         st.error("Unknown user role.")
+
