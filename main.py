@@ -9,10 +9,10 @@ st.set_page_config(page_title="DeteXTB", layout="wide")
 
 # --- Model Download & Load ---
 MODEL_FILE = "deteXTB_final_mandaue_model.keras"
-MODEL_URL = "https://drive.google.com/file/d/19Qi6uLhoTAz6QrH9cQC9oRR9rkSe5T91/view?usp=sharing" 
+MODEL_URL = "https://drive.google.com/uc?id=19Qi6uLhoTAz6QrH9cQC9oRR9rkSe5T91"
 
 if not os.path.exists(MODEL_FILE):
-    st.info("Downloading model from Google Drive...")
+    st.info("Downloading model from Google Drive...")   # just a safety check
     gdown.download(MODEL_URL, MODEL_FILE, quiet=False)
 
 if "model" not in st.session_state:
