@@ -5,6 +5,14 @@ import tensorflow as tf
 import os
 import gdown
 
+# Clear Streamlit caches to prevent Websocket errors
+try:
+    st.cache_data.clear()
+    st.cache_resource.clear()
+except Exception as e:
+    # Silently handle any cache clearing errors
+    pass
+
 st.set_page_config(page_title="DeteXTB", layout="wide")
 
 # --- Model Download & Load ---
@@ -38,4 +46,5 @@ else:
         manager_sidebar.main()
     else:
         st.error("Unknown user role.")
+
 
