@@ -31,12 +31,12 @@ def main():  # Wrap your sidebar layout in a function
     def get_base64_logo(image_path):
         # Always resolve relative to sidebar.py's own location
         base_dir = os.path.dirname(__file__)  # e.g., .../DeteXTB-System/Receptionist
-        abs_path = os.path.join(base_dir, image_path)  # e.g., images/logo_light.png
+        abs_path = os.path.join(base_dir, image_path)  # e.g., ../images/logo_light.png
         with open(abs_path, "rb") as f:
             data = f.read()
         return base64.b64encode(data).decode()
 
-    logo_path = "images/logo_light.png" if is_light else "images/logo_dark.png"
+    logo_path = "../images/logo_light.png" if is_light else "../images/logo_dark.png"
     logo_base64 = get_base64_logo(logo_path)
 
     # --- Function to get formatted display name ---
@@ -219,23 +219,23 @@ def main():  # Wrap your sidebar layout in a function
         col1, col2 = st.columns([0.4, 0.8])
         with col1:
             st.markdown(
-                f'<img src="data:image/png;base64,{get_base64_logo("images/dashboard.png")}" width="20" class="sidebar-icon-dashboard">',
+                f'<img src="data:image/png;base64,{get_base64_logo("../images/dashboard.png")}" width="20" class="sidebar-icon-dashboard">',
                 unsafe_allow_html=True
             )
         with col2:
             if st.button("Dashboard", key="dashboard"):
                 st.session_state.page = "Dashboard"
 
-        nav_button_with_icon("Manage Cases", "images/cases.png", "cases")
-        nav_button_with_icon("Heatmap", "images/heatmap.png", "heatmap")
-        nav_button_with_icon("Reports", "images/reports.png", "reports")
-        nav_button_with_icon("Users", "images/users.png", "users")
+        nav_button_with_icon("Manage Cases", "../images/cases.png", "cases")
+        nav_button_with_icon("Heatmap", "../images/heatmap.png", "heatmap")
+        nav_button_with_icon("Reports", "../images/reports.png", "reports")
+        nav_button_with_icon("Users", "../images/users.png", "users")
 
         # --- Account Name (with larger icon) ---
         col1, col2 = st.columns([0.4, 0.8])
         with col1:
             st.markdown(
-                f'<img src="data:image/png;base64,{get_base64_logo("images/account.png")}" width="45" class="sidebar-icon-account">',
+                f'<img src="data:image/png;base64,{get_base64_logo("../images/account.png")}" width="45" class="sidebar-icon-account">',
                 unsafe_allow_html=True
             )
         with col2:
@@ -247,7 +247,7 @@ def main():  # Wrap your sidebar layout in a function
         st.markdown(f"<div class='account' style='margin-left: 68px; margin-top: -28px;font-size: 14px;'>TB DOTS Manager</div>", unsafe_allow_html=True)
 
         # --- Logout Button ---
-        logout_icon_path = "images/logout.png"
+        logout_icon_path = "../images/logout.png"
         col1, col2 = st.columns([0.4, 0.8])
         
         def trigger_logout():
