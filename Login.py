@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from Supabase import supabase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timezone
+from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
  
@@ -668,9 +668,9 @@ def Login(is_light=True):
                                 "USER_LOCK_UNTIL": None
                             }).eq("USER_USERNAME", username).execute()
 
-                            # Update last active with UTC time
+                            # Update last active
                             supabase.table("USER_Table").update({
-                                "USER_LAST_ACTIVE": datetime.now(timezone.utc).isoformat()
+                                "USER_LAST_ACTIVE": datetime.now().isoformat()
                             }).eq("USER_ID", user["USER_ID"]).execute()
 
                             # Set session state for successful login
@@ -711,11 +711,10 @@ def Login(is_light=True):
                                 user_data["lock_until"] = time.time() + BLOCK_DURATION
                                 st.session_state.user_attempts[username] = user_data
 
-                                # Lock user in database with UTC time
-                                lock_until_time = datetime.now(timezone.utc).timestamp() + BLOCK_DURATION
-                                lock_until_iso = datetime.fromtimestamp(lock_until_time, timezone.utc).isoformat()
+                                # Lock user in database
+                                lock_until_time = datetime.fromtimestamp(time.time() + BLOCK_DURATION, timezone.utc).isoformat()
                                 supabase.table("USER_Table").update({
-                                    "USER_LOCK_UNTIL": lock_until_iso
+                                    "USER_LOCK_UNTIL": lock_until_time
                                 }).eq("USER_USERNAME", username).execute()
 
                                 # Send security alert email
