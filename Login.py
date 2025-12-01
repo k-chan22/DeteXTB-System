@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from Supabase import supabase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
+from datetime import datetime, timezone
 from streamlit_autorefresh import st_autorefresh
 
  
@@ -668,7 +668,7 @@ def Login(is_light=True):
                                 "USER_LOCK_UNTIL": None
                             }).eq("USER_USERNAME", username).execute()
 
-                            # Update last active
+                            # Update last active with UTC time
                             supabase.table("USER_Table").update({
                                 "USER_LAST_ACTIVE": datetime.now(timezone.utc).isoformat()
                             }).eq("USER_ID", user["USER_ID"]).execute()
@@ -711,7 +711,7 @@ def Login(is_light=True):
                                 user_data["lock_until"] = time.time() + BLOCK_DURATION
                                 st.session_state.user_attempts[username] = user_data
 
-                                # Lock user in database
+                                # Lock user in database with UTC time
                                 lock_until_time = datetime.now(timezone.utc).timestamp() + BLOCK_DURATION
                                 lock_until_iso = datetime.fromtimestamp(lock_until_time, timezone.utc).isoformat()
                                 supabase.table("USER_Table").update({
@@ -903,6 +903,5 @@ def Login(is_light=True):
                             }
                             st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-
 
             st.markdown("</div></div>", unsafe_allow_html=True)
