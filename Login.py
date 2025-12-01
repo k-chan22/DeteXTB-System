@@ -670,7 +670,7 @@ def Login(is_light=True):
 
                             # Update last active
                             supabase.table("USER_Table").update({
-                                "USER_LAST_ACTIVE": datetime.now().isoformat()
+                                "USER_LAST_ACTIVE": datetime.now(timezone.utc).isoformat()
                             }).eq("USER_ID", user["USER_ID"]).execute()
 
                             # Set session state for successful login
@@ -712,9 +712,10 @@ def Login(is_light=True):
                                 st.session_state.user_attempts[username] = user_data
 
                                 # Lock user in database
-                                lock_until_time = datetime.fromtimestamp(time.time() + BLOCK_DURATION, timezone.utc).isoformat()
+                                lock_until_time = datetime.now(timezone.utc).timestamp() + BLOCK_DURATION
+                                lock_until_iso = datetime.fromtimestamp(lock_until_time, timezone.utc).isoformat()
                                 supabase.table("USER_Table").update({
-                                    "USER_LOCK_UNTIL": lock_until_time
+                                    "USER_LOCK_UNTIL": lock_until_iso
                                 }).eq("USER_USERNAME", username).execute()
 
                                 # Send security alert email
@@ -902,5 +903,6 @@ def Login(is_light=True):
                             }
                             st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
 
             st.markdown("</div></div>", unsafe_allow_html=True)
