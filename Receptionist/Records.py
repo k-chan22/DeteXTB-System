@@ -257,6 +257,21 @@ def get_coordinates_from_barangay(barangay_name, show_notification, is_light=Tru
     else:
         show_notification(f"⚠️ Coordinates for '{barangay_name}' not found.", "warning", is_light=is_light)
         return None, None
+
+def get_age_group(age):
+    """Convert numerical age to MAP_AGE_GROUP string format"""
+    try:
+        age_int = int(age)
+        if age_int <= 14:
+            return "0-14"
+        elif age_int <= 24:
+            return "15-24"
+        elif age_int <= 64:
+            return "25-64"
+        else:
+            return "65+"
+    except (ValueError, TypeError):
+        return "Unknown"
   
 # Define the page as a function to be used by Home.py
 def Records(is_light=True):
@@ -621,50 +636,7 @@ def Records(is_light=True):
             if not result_res.data:
                 show_notification("Failed to create analysis result record.", "error", is_light=is_light)
                 return False
-
-            # Insert into heatmap (only if "Positive")
-            if label == "Positive":
-                barangay = selected_case.get("PATIENT_BARANGAY", "Unknown")
-                dob_str = selected_case.get("PATIENT_DOB", "2000-01-01")
-                dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
-                gender = selected_case.get("sex", "Male")
-                age = calculate_age(dob)
-
-                coords = get_coordinates_from_barangay(barangay, show_notification, is_light=is_light)
-                if coords is None:
-                    show_notification("Cannot fetch coordinates — heatmap not saved.", "error", is_light=is_light)
-                    return False
-                lat, lng = coords
-
-                # population = mandaue_barangay_population_2020.get(barangay, 0)
-                # monthly_target = round((population * incidence_rate) / 12)
-
-                map_id = str(uuid.uuid4())
-
-                heatmap_data = {
-                    "MAP_ID": map_id,
-                    "MAP_LAT": lat,
-                    "MAP_LANG": lng, 
-                    "MAP_BRGY": barangay,
-                    "MAP_AGE": age,
-                    "MAP_SEX": gender,
-                    "MAP_GENERATED_AT": datetime.now().isoformat(),
-                    "MAP_UPDATED_AT": datetime.now().isoformat(),
-                    "CXR_ID": cxr_id
-                }
-
-                try:
-                    res = supabase.table("HEATMAP_Table").insert(heatmap_data).execute()
-                    if hasattr(res, 'error') and res.error:
-                        show_notification(f"Supabase error: {res.error.message}", "error", is_light=is_light)
-                        return False
-                    # else:
-                    #     show_notification(f"Heatmap data saved with monthly target: {monthly_target}", "success", is_light=is_light)
-                except Exception as e:
-                    show_notification(f"Heatmap insertion failed: {e}", "error", is_light=is_light)
-                    return False
-
-            show_notification("X-ray analysis saved successfully.", "success", is_light=is_light)
+            
             return True
 
         except Exception as e:
@@ -1749,9 +1721,9 @@ def Records(is_light=True):
                                 )
                                 
                                 if save_success:
-                                    show_notification("X-ray saved successfully!", "success")
+                                    st.session_state["records_confirm_save"] = False
+                                    
                                     st.session_state["add_xray_mode"] = False
-                                    # Clear all X-ray upload related session state after successful save
                                     cleanup_keys = [
                                         "records_uploaded_file_bytes", "records_uploaded_file_name", 
                                         "records_AI_RESULT", "records_xray_uploaded", 
@@ -1761,12 +1733,15 @@ def Records(is_light=True):
                                     ]
                                     for key in cleanup_keys:
                                         st.session_state.pop(key, None)
+                                    
+                                    show_notification("X-ray saved successfully!", "success")
+                                    
                                     st.rerun()
+                                else:
+                                    show_notification("Failed to save X-ray. Please try again.", "error")
                                     
                             except Exception as e:
                                 show_notification(f"Error saving X-Ray: {str(e)}", "error")
-                                st.session_state["records_confirm_save"] = False
-                                st.rerun()
 
                     with col_no:
                         if st.button("No", key="records_save_xray_no"):
@@ -2352,14 +2327,17 @@ def Records(is_light=True):
                         if st.button("Yes", key="save_yes"):
                             try:
                                 patient_id = st.session_state.selected_case["pt_id"]
-
+                                
+                                # Calculate age from DOB
+                                age_from_dob = calculate_age(st.session_state.rec_dob)
+                                
                                 supabase.table("PATIENT_Table").update({
                                     "PT_FNAME": st.session_state.rec_fname.strip().title(),
                                     "PT_MNAME": st.session_state.rec_mname.strip().title(),
                                     "PT_LNAME": st.session_state.rec_lname.strip().title(),
                                     "PT_SEX": st.session_state.rec_sex,
                                     "PT_DOB": st.session_state.rec_dob.isoformat(),
-                                    "PT_AGE": calculate_age(st.session_state.rec_dob),
+                                    "PT_AGE": age_from_dob,  
                                     "PT_PHONE": st.session_state.rec_phone.strip(),
                                     "PT_HOUSENO": st.session_state.rec_house.strip(),
                                     "PT_STREET": st.session_state.rec_street.strip().title(),
@@ -2370,7 +2348,7 @@ def Records(is_light=True):
                                 # Refresh updated data
                                 updated_patient = supabase.table("PATIENT_Table").select("*").eq("PT_ID", patient_id).single().execute().data
                                 updated_patient["name"] = f"{updated_patient.get('PT_FNAME', '')} {updated_patient.get('PT_MNAME', '')} {updated_patient.get('PT_LNAME', '')}".strip()
-                                updated_patient["age"] = calculate_age(datetime.strptime(updated_patient.get("PT_DOB", "2000-01-01"), "%Y-%m-%d").date())
+                                updated_patient["age"] = age_from_dob  
                                 updated_patient["address"] = f"{updated_patient.get('PT_HOUSENO', '')}, {updated_patient.get('PT_STREET', '')}, {updated_patient.get('PT_BRGY', '')}, Mandaue City"
 
                                 st.session_state.selected_case.update({
@@ -2391,17 +2369,42 @@ def Records(is_light=True):
                                     "phone": updated_patient.get("PT_PHONE", "")
                                 })
 
-                                # Update Heatmap data for linked CXR records
+                                # Update Heatmap data for linked CXR records 
                                 cxr_records = supabase.table("CHEST_XRAY_Table").select("CXR_ID").eq("PT_ID", patient_id).execute()
                                 if cxr_records.data:
+                                    age_group = get_age_group(age_from_dob)
+                                    barangay_name = updated_patient.get("PT_BRGY", "")
+                                    
                                     for cxr in cxr_records.data:
-                                        supabase.table("HEATMAP_Table").update({
-                                            "MAP_BRGY": updated_patient.get("PT_BRGY", ""),
-                                            "MAP_AGE": updated_patient.get("PT_AGE", ""),
-                                            "MAP_SEX": updated_patient.get("PT_SEX", ""),
-                                            "MAP_UPDATED_AT": datetime.now().isoformat()
-                                        }).eq("CXR_ID", cxr["CXR_ID"]).execute()
-
+                                        cxr_id = cxr["CXR_ID"]
+                                        
+                                        # Find any DIAGNOSIS records for this CXR
+                                        diagnosis_response = supabase.table("DIAGNOSIS_Table").select("DX_ID").eq("CXR_ID", cxr_id).execute()
+                                        
+                                        if diagnosis_response.data:
+                                            for diagnosis in diagnosis_response.data:
+                                                dx_id = diagnosis["DX_ID"]
+                                                
+                                                # Check if a HEATMAP record exists for this DX_ID
+                                                heatmap_check = supabase.table("HEATMAP_Table").select("MAP_ID").eq("DX_ID", dx_id).execute()
+                                                
+                                                if heatmap_check.data:
+                                                    # Update the existing heatmap
+                                                    update_data = {
+                                                        "MAP_BRGY": barangay_name,
+                                                        "MAP_AGE_GROUP": age_group,
+                                                        "MAP_SEX": updated_patient.get("PT_SEX", ""),
+                                                        "MAP_UPDATED_AT": datetime.now().isoformat()
+                                                    }
+                                                    
+                                                    # Add coordinates if available
+                                                    if barangay_name in mandaue_barangay_coordinates:
+                                                        lat, lng = mandaue_barangay_coordinates[barangay_name]
+                                                        update_data["MAP_LAT"] = lat
+                                                        update_data["MAP_LANG"] = lng
+                                                    
+                                                    supabase.table("HEATMAP_Table").update(update_data).eq("DX_ID", dx_id).execute()
+                                
                                 st.session_state["edit_patient_mode"] = False
                                 st.session_state.pop("form_prefilled", None)
                                 st.session_state["save_edit"] = False
@@ -2410,7 +2413,8 @@ def Records(is_light=True):
 
                             except Exception as e:
                                 st.session_state["save_edit"] = False
-                                show_notification(f" Error saving changes: {e}", "error")
+                                st.session_state["show_save_error"] = f"Error saving changes: {e}"
+                                st.rerun()
 
                     with col_no:
                         if st.button("No", key="save_no"):
@@ -2418,7 +2422,7 @@ def Records(is_light=True):
                             st.rerun()
 
                 save_edit_dialog()
-                
+             
         # Fetch all chest X-ray records for the selected patient
         def fetch_all_cases_for_patient(pt_id):
             try:
